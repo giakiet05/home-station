@@ -5,8 +5,8 @@ services:
       dockerfile: Dockerfile
     container_name: home-station-server
     restart: always
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       - PORT=8080
       - SERIAL_PORT=/dev/ttyACM0
