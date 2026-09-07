@@ -14,3 +14,19 @@ services:
       - LOG_LEVEL=INFO
     devices:
       - /dev/ttyACM0:/dev/ttyACM0
+    networks:
+      - coolify
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.station-http.rule=Host(`station.giakiet.io.vn`)"
+      - "traefik.http.routers.station-http.entrypoints=http"
+      - "traefik.http.routers.station-https.rule=Host(`station.giakiet.io.vn`)"
+      - "traefik.http.routers.station-https.entrypoints=https"
+      - "traefik.http.routers.station-https.tls=true"
+      - "traefik.http.routers.station-https.tls.certresolver=letsencrypt"
+      - "traefik.http.services.station-svc.loadbalancer.server.port=8080"
+
+networks:
+  coolify:
+    external: true
