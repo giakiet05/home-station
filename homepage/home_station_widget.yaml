@@ -1,0 +1,21 @@
+# Homepage services.yaml snippet for Home Station
+# Add this block to your /home/giakiet05/homepage_config/services.yaml
+
+- Environment:
+    - Home Station:
+        icon: home-assistant.png
+        href: http://localhost:8080
+        description: Real-time room telemetry from ESP32-C3
+        widget:
+          type: customapi
+          url: http://home-station-server:8080/api/v1/homepage
+          refreshInterval: 3000
+          mappings:
+            - field: temperature
+              label: Temperature
+            - field: humidity
+              label: Humidity
+            - field: smoke_level
+              label: Smoke/Gas
+            - field: device_state
+              label: State

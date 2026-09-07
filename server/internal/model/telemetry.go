@@ -1,0 +1,37 @@
+package model
+
+import "time"
+
+// RawESP32Payload defines the incoming JSON structure sent over serial from ESP32.
+type RawESP32Payload struct {
+	Temperature  float64 `json:"temp"`
+	Humidity     float64 `json:"humidity"`
+	SmokeRawADC  uint16  `json:"smoke_raw"`
+	SmokeVoltage float64 `json:"smoke_voltage"`
+	SmokePercent float64 `json:"smoke_pct"`
+	Status       string  `json:"status"`
+	UptimeMs     uint64  `json:"uptime_ms"`
+}
+
+// Telemetry represents the processed and timestamped environment sensor snapshot.
+type Telemetry struct {
+	Temperature  float64   `json:"temperature"`
+	Humidity     float64   `json:"humidity"`
+	SmokeRawADC  uint16    `json:"smoke_raw_adc"`
+	SmokeVoltage float64   `json:"smoke_voltage"`
+	SmokePercent float64   `json:"smoke_percent"`
+	SmokeStatus  string    `json:"smoke_status"`
+	UptimeSec    uint64    `json:"uptime_seconds"`
+	DeviceOnline bool      `json:"device_online"`
+	LastSeen     time.Time `json:"last_seen"`
+}
+
+// HomepageWidgetResponse represents formatted string values tailored for Homepage customapi widget.
+type HomepageWidgetResponse struct {
+	Temperature string `json:"temperature"`
+	Humidity    string `json:"humidity"`
+	SmokeLevel  string `json:"smoke_level"`
+	Status      string `json:"status"`
+	DeviceState string `json:"device_state"`
+	LastUpdated string `json:"last_updated"`
+}

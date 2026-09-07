@@ -1,0 +1,17 @@
+# PlatformIO build files and environments
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# IDE files
+.vscode/
+.idea/
+
+# Go build output
+server/bin/
+bin/
+*.exe
+
+# OS specific
+.DS_Store
+Thumbs.db
