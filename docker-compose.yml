@@ -1,7 +1,7 @@
 services:
   home-station-server:
     build:
-      context: ./server
+      context: .
       dockerfile: Dockerfile
     container_name: home-station-server
     restart: always

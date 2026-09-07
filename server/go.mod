@@ -1,7 +1,10 @@
 module github.com/giakiet05/home-station/server
 
-go 1.25.0
+go 1.22
 
-require go.bug.st/serial v1.8.0
+require go.bug.st/serial v1.6.2
 
-require golang.org/x/sys v0.43.0 // indirect
+require (
+	github.com/creack/goselect v0.1.2 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+)
