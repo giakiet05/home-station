@@ -46,6 +46,8 @@ private:
     bool serverOnline;
     bool hadInitialHeartbeat;
     bool alertDispatchedForHang;
+    bool pendingHangAlert;
+    bool pendingRecoveryAlert;
 
     void ensureWiFiConnected();
 };

@@ -10,89 +10,7 @@ SensorManager::SensorManager()
       bmp280_initialized_(false),
       boot_timestamp_ms_(0) {}
 
-/**
- * @brief Probes a specific pair of SDA and SCL pins with internal pull-ups enabled.
- * @param sdaPin GPIO number for SDA.
- * @param sclPin GPIO number for SCL.
- * @return uint8_t Number of I2C devices detected.
- */
-static uint8_t probePinPair(int8_t sdaPin, int8_t sclPin) {
-    pinMode(sdaPin, INPUT_PULLUP);
-    pinMode(sclPin, INPUT_PULLUP);
-    Wire.end();
-    Wire.begin(sdaPin, sclPin, 100000);
-    Wire.setTimeOut(25);
 
-    uint8_t count = 0;
-    for (uint8_t address = 1; address < 127; ++address) {
-        Wire.beginTransmission(address);
-        if (Wire.endTransmission() == 0) {
-            Serial.printf("[I2C SCAN SUCCESS] Found device 0x%02X on SDA=GPIO%d, SCL=GPIO%d\n",
-                          address, sdaPin, sclPin);
-            count++;
-        }
-    }
-    return count;
-}
-
-/**
- * @brief Performs a full exhaustive scan across all candidate GPIO pairs on ESP32-C3.
- * @param[out] foundSda Detected SDA pin.
- * @param[out] foundScl Detected SCL pin.
- * @return bool True if I2C devices were found, false otherwise.
- */
-static bool autoDiscoverI2CPins(int8_t &foundSda, int8_t &foundScl) {
-    Serial.println("[I2C] Starting comprehensive pin search across all GPIO combinations...");
-
-    // Common pin pair candidates on ESP32-C3
-    const int8_t candidatePairs[][2] = {
-        {8, 9},   // Default Super Mini silkscreen (SDA=8, SCL=9)
-        {9, 8},   // Swapped (SDA=9, SCL=8)
-        {4, 5},   // Standard ESP32-C3 DevKit I2C default
-        {5, 4},   // Swapped
-        {6, 7},   // Top-left pins
-        {7, 6},   // Swapped
-        {10, 9},  // Mid-left pins
-        {9, 10},  // Swapped
-        {20, 21}, // Bottom-left pins
-        {21, 20}, // Swapped
-        {1, 2},   // Bottom-right pins
-        {2, 1},   // Swapped
-        {3, 4},   // Mid-right pins
-        {4, 3}    // Swapped
-    };
-
-    for (const auto &pair : candidatePairs) {
-        int8_t sda = pair[0];
-        int8_t scl = pair[1];
-        if (probePinPair(sda, scl) > 0) {
-            foundSda = sda;
-            foundScl = scl;
-            Serial.printf("[I2C] Auto-discovery selected SDA=GPIO%d, SCL=GPIO%d\n", foundSda, foundScl);
-            return true;
-        }
-    }
-
-    Serial.println("[I2C] Comprehensive pin scan finished. No I2C response on any tested GPIO pair.");
-    return false;
-}
-
-/**
- * @brief Checks if SDA and SCL lines are pulled HIGH or stuck LOW.
- */
-static void checkPinStates(int8_t sdaPin, int8_t sclPin) {
-    pinMode(sdaPin, INPUT_PULLUP);
-    pinMode(sclPin, INPUT_PULLUP);
-    delay(10);
-    int sdaState = digitalRead(sdaPin);
-    int sclState = digitalRead(sclPin);
-
-    Serial.printf("[PIN CHECK] SDA (GPIO%d) = %s | SCL (GPIO%d) = %s\n",
-                  sdaPin,
-                  (sdaState == HIGH) ? "HIGH (Normal 3.3V)" : "LOW (Stuck/Shorted to GND!)",
-                  sclPin,
-                  (sclState == HIGH) ? "HIGH (Normal 3.3V)" : "LOW (Stuck/Shorted to GND!)");
-}
 
 /**
  * @brief Initializes I2C communication, sensor peripherals, and ADC pins.
@@ -104,55 +22,12 @@ bool SensorManager::init() {
     // Initialize MQ-2 analog pin
     pinMode(Config::PIN_MQ2_AO, INPUT);
 
-    // Check physical electrical level on I2C bus pins
-    checkPinStates(Config::PIN_I2C_SDA, Config::PIN_I2C_SCL);
-
-    int8_t activeSda = Config::PIN_I2C_SDA;
-    int8_t activeScl = Config::PIN_I2C_SCL;
-
     // Initialize DHT11
     dht_.begin();
     dht_initialized_ = true;
     Serial.printf("[INFO] DHT11 sensor initialized on GPIO%d.\n", Config::PIN_DHT_DATA);
 
-    // Run auto-discovery scan for I2C devices
-    if (!autoDiscoverI2CPins(activeSda, activeScl)) {
-        // Fall back to default config pins
-        Wire.end();
-        Wire.begin(Config::PIN_I2C_SDA, Config::PIN_I2C_SCL, 100000);
-    }
-
-    // Initialize AHT20 if present
-    if (aht20_.begin(&Wire)) {
-        aht20_initialized_ = true;
-        Serial.println("[INFO] AHT20 sensor initialized successfully.");
-    } else {
-        Serial.println("[INFO] AHT20 sensor not present on I2C bus.");
-    }
-
-    // Initialize BMP280 if present (check default 0x77, fallback to 0x76)
-    if (bmp280_.begin(Config::I2C_ADDR_BMP280_DEFAULT, BMP280_CHIPID)) {
-        bmp280_initialized_ = true;
-        Serial.println("[INFO] BMP280 sensor initialized at address 0x77.");
-    } else if (bmp280_.begin(Config::I2C_ADDR_BMP280_ALT, BMP280_CHIPID)) {
-        bmp280_initialized_ = true;
-        Serial.println("[INFO] BMP280 sensor initialized at address 0x76.");
-    } else {
-        Serial.println("[INFO] BMP280 sensor not present on I2C bus.");
-    }
-
-    if (bmp280_initialized_) {
-        // Configure standard sampling parameters for indoor monitoring
-        bmp280_.setSampling(
-            Adafruit_BMP280::MODE_NORMAL,
-            Adafruit_BMP280::SAMPLING_X2,
-            Adafruit_BMP280::SAMPLING_X16,
-            Adafruit_BMP280::FILTER_X16,
-            Adafruit_BMP280::STANDBY_MS_500
-        );
-    }
-
-    return (dht_initialized_ || aht20_initialized_ || bmp280_initialized_);
+    return dht_initialized_;
 }
 
 /**
