@@ -17,63 +17,38 @@ WatchdogManager::WatchdogManager(LedController& ledCtrl)
 #include <esp_wifi.h>
 
 void WatchdogManager::init() {
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect(true);
+    // 1. Wipe stale NVS WiFi cache to avoid corrupted AP metadata
+    WiFi.persistent(false);
+    WiFi.disconnect(true, true);
     delay(200);
 
-    WiFi.setTxPower(WIFI_POWER_19_5dBm);
-
-    Serial.println("[WATCHDOG] Scanning 2.4GHz networks for SSID: " + String(Config::WIFI_SSID));
-    int numNetworks = WiFi.scanNetworks();
-    int targetIndex = -1;
-    int bestRssi = -100;
-
-    for (int i = 0; i < numNetworks; ++i) {
-        Serial.printf("  Found: '%s' | RSSI: %d dBm | Ch: %d | BSSID: %s | Auth: %d\n",
-                      WiFi.SSID(i).c_str(), WiFi.RSSI(i), WiFi.channel(i),
-                      WiFi.BSSIDstr(i).c_str(), WiFi.encryptionType(i));
-        if (WiFi.SSID(i) == Config::WIFI_SSID) {
-            if (WiFi.RSSI(i) > bestRssi) {
-                bestRssi = WiFi.RSSI(i);
-                targetIndex = i;
-            }
-        }
-    }
-
-    if (targetIndex >= 0) {
-        Serial.printf("[WATCHDOG] Connecting to AP BSSID: %s on Channel %d (RSSI: %d dBm)\n",
-                      WiFi.BSSIDstr(targetIndex).c_str(), WiFi.channel(targetIndex), bestRssi);
-        WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASSWORD, WiFi.channel(targetIndex), WiFi.BSSID(targetIndex));
-    } else {
-        Serial.println("[WATCHDOG] SSID not found in scan, attempting default connect...");
-        WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASSWORD);
-    }
-
-    // Configure PMF (Protected Management Frames) for modern WPA2/WPA3 routers
-    wifi_config_t conf;
-    if (esp_wifi_get_config(WIFI_IF_STA, &conf) == ESP_OK) {
-        conf.sta.pmf_cfg.capable = true;
-        conf.sta.pmf_cfg.required = false;
-        esp_wifi_set_config(WIFI_IF_STA, &conf);
-    }
-
+    WiFi.mode(WIFI_STA);
+    WiFi.setSleep(false); // Prevent RF modem sleep during handshake
+    WiFi.setTxPower(WIFI_POWER_8_5dBm); // Critical for ESP32-C3 Super Mini voltage stability
     WiFi.setAutoReconnect(true);
-    WiFi.persistent(true);
 
-    // Wait up to 12 seconds during boot for initial WiFi handshake
+    Serial.printf("[WATCHDOG] Connecting to SSID: '%s' (Pass length: %d) with 8.5dBm TX power\n",
+                  Config::WIFI_SSID, strlen(Config::WIFI_PASSWORD));
+
+    WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASSWORD);
+
+    // Force HT20 20MHz bandwidth for RF stability
+    esp_wifi_set_bandwidth(WIFI_IF_STA, WIFI_BW_HT20);
+
+    // Wait up to 15 seconds for initial connection
     uint32_t startMs = millis();
-    while (WiFi.status() != WL_CONNECTED && (millis() - startMs < 12000)) {
-        delay(300);
+    while (WiFi.status() != WL_CONNECTED && (millis() - startMs < 15000)) {
+        delay(500);
         Serial.print(".");
     }
     Serial.println();
 
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.printf("[WATCHDOG] WiFi connected successfully! IP: %s, RSSI: %d dBm\n",
+        Serial.printf("[WATCHDOG] WiFi CONNECTED successfully! IP: %s, RSSI: %d dBm\n",
                       WiFi.localIP().toString().c_str(), WiFi.RSSI());
         sendTelegramAlert("[SYSTEM] Home Station ESP32 hardware watchdog active & connected to WiFi.");
     } else {
-        Serial.printf("[WATCHDOG] WiFi connection pending, status code: %d\n", WiFi.status());
+        Serial.printf("[WATCHDOG] Initial connection pending, status code: %d\n", WiFi.status());
     }
 }
 
