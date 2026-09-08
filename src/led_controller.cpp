@@ -12,6 +12,14 @@ void LedController::init() {
     pinMode(Config::PIN_RGB_BLUE, OUTPUT);
     pinMode(Config::PIN_BUILTIN_LED, OUTPUT);
 
+    // Startup self-test: flash Red -> Green -> Blue for 300ms each to verify all 3 channels
+    applyColor(true, false, false); // Red
+    delay(300);
+    applyColor(false, true, false); // Green
+    delay(300);
+    applyColor(false, false, true); // Blue
+    delay(300);
+
     // Initial state: Blue (booting / initializing)
     setState(LedState::BOOTING);
     // Turn off builtin LED (Active LOW -> HIGH is OFF)
