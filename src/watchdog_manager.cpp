@@ -21,16 +21,19 @@ void WatchdogManager::init() {
     WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASSWORD);
     Serial.println("[WATCHDOG] Initializing WiFi connection to SSID: " + String(Config::WIFI_SSID));
 
-    // Wait up to 5 seconds during boot for initial WiFi handshake
+    // Wait up to 8 seconds during boot for initial WiFi handshake
     uint32_t startMs = millis();
-    while (WiFi.status() != WL_CONNECTED && (millis() - startMs < 5000)) {
+    while (WiFi.status() != WL_CONNECTED && (millis() - startMs < 8000)) {
         delay(200);
         Serial.print(".");
     }
     Serial.println();
 
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.printf("[WATCHDOG] WiFi connected successfully! IP: %s\n", WiFi.localIP().toString().c_str());
+        Serial.printf("[WATCHDOG] WiFi connected successfully! IP: %s, RSSI: %d dBm\n",
+                      WiFi.localIP().toString().c_str(), WiFi.RSSI());
+        // Send startup verification ping to Telegram
+        sendTelegramAlert("[SYSTEM] Home Station ESP32 hardware watchdog active & connected to WiFi.");
     } else {
         Serial.println("[WATCHDOG] WiFi connection pending in background.");
     }
@@ -77,10 +80,10 @@ bool WatchdogManager::sendTelegramAlert(const String& message) {
 
     WiFiClientSecure client;
     client.setInsecure(); // Skip certificate bundle verification for lightweight embedded TLS
-    client.setTimeout(10); // 10 seconds
+    client.setTimeout(15000); // 15,000 milliseconds (15 seconds)
 
     HTTPClient http;
-    http.setTimeout(10000);
+    http.setTimeout(15000); // 15,000 milliseconds (15 seconds)
     http.setReuse(false);
     String url = "https://api.telegram.org/bot" + String(Config::TELEGRAM_BOT_TOKEN) + "/sendMessage";
 
