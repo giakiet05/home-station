@@ -138,12 +138,12 @@ void WatchdogManager::update(bool smokeDetected) {
         serverOnline = false;
         alertDispatchedForHang = true;
         pendingHangAlert = true;
-        Serial.println("[WATCHDOG] Homeserver heartbeat lost > 25s! Triggering emergency alert.");
+        Serial.println("[WATCHDOG] Homeserver heartbeat lost > 60s! Triggering emergency alert.");
     }
 
     // 2. Dispatch pending hang alert
     if (pendingHangAlert && (WiFi.status() == WL_CONNECTED)) {
-        if (sendTelegramAlert("[ALERT] Hardware Watchdog: Homeserver (HP 15) heartbeat lost (>25s). Possible system freeze or power down.")) {
+        if (sendTelegramAlert("[ALERT] Hardware Watchdog: Homeserver (HP 15) heartbeat lost (>60s). Possible system freeze or power down.")) {
             pendingHangAlert = false;
         }
     }
@@ -156,7 +156,7 @@ void WatchdogManager::update(bool smokeDetected) {
     }
 
     // 4. Startup grace period check
-    if (!hadInitialHeartbeat && (now > 35000) && !alertDispatchedForHang) {
+    if (!hadInitialHeartbeat && (now > 65000) && !alertDispatchedForHang) {
         alertDispatchedForHang = true;
         Serial.println("[WATCHDOG] No initial heartbeat received after boot timeout.");
         sendTelegramAlert("[WARN] Hardware Watchdog: ESP32 started but no serial heartbeat received from Homeserver.");
@@ -165,7 +165,7 @@ void WatchdogManager::update(bool smokeDetected) {
     // 5. Update LED visual state based on priority
     if (smokeDetected) {
         ledController.setState(LedState::GAS_DANGER);
-    } else if (!serverOnline && (hadInitialHeartbeat || now > 35000)) {
+    } else if (!serverOnline && (hadInitialHeartbeat || now > 65000)) {
         ledController.setState(LedState::SERVER_HANG);
     } else if (serverOnline) {
         ledController.setState(LedState::SERVER_OK);

@@ -49,6 +49,6 @@ namespace Config {
     constexpr uint32_t SERIAL_BAUD_RATE = 115200;
     constexpr uint32_t SENSOR_READ_INTERVAL_MS = 2000;
     constexpr uint32_t MQ2_WARMUP_DURATION_MS = 20000;
-    constexpr uint32_t HEARTBEAT_TIMEOUT_MS = 25000; // 25s timeout for Homeserver
+    constexpr uint32_t HEARTBEAT_TIMEOUT_MS = 60000; // 60s timeout for Homeserver
 }
 

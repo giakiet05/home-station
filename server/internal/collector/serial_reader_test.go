@@ -67,11 +67,11 @@ func TestGetLatest_OfflineTimeout(t *testing.T) {
 
 	c.mu.Lock()
 	c.latest.DeviceOnline = true
-	c.latest.LastSeen = time.Now().Add(-35 * time.Second) // 35 seconds ago
+	c.latest.LastSeen = time.Now().Add(-65 * time.Second) // 65 seconds ago
 	c.mu.Unlock()
 
 	latest := c.GetLatest()
 	if latest.DeviceOnline {
-		t.Errorf("expected DeviceOnline to be false due to 30s timeout, got true")
+		t.Errorf("expected DeviceOnline to be false due to 60s timeout, got true")
 	}
 }
