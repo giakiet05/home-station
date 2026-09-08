@@ -27,7 +27,7 @@ void WatchdogManager::feedHeartbeat() {
 
         if (alertDispatchedForHang) {
             alertDispatchedForHang = false;
-            sendTelegramAlert("✅ *[HARDWARE WATCHDOG]* Homeserver (HP 15) đã khôi phục kết nối Serial thành công!");
+            sendTelegramAlert("[RECOVERY] Hardware Watchdog: Homeserver (HP 15) serial connection and heartbeat restored.");
         }
     }
 }
@@ -73,7 +73,7 @@ bool WatchdogManager::sendTelegramAlert(const String& message) {
 
     String jsonPayload = "{\"chat_id\":\"" + String(Config::TELEGRAM_CHAT_ID) +
                          "\",\"text\":\"" + escapedMsg +
-                         "\",\"parse_mode\":\"Markdown\"}";
+                         "\"}";
 
     int httpCode = http.POST(jsonPayload);
     bool success = (httpCode == 200);
@@ -97,14 +97,14 @@ void WatchdogManager::update(bool smokeDetected) {
         serverOnline = false;
         alertDispatchedForHang = true;
         Serial.println("[WATCHDOG] Homeserver heartbeat lost > 25s! Triggering emergency alert.");
-        sendTelegramAlert("🚨 *[HARDWARE WATCHDOG]* Homeserver (HP 15) đã mất kết nối Serial hơn 25 giây!\nTrạng thái: Máy bị treo cứng hoặc mất nguồn.");
+        sendTelegramAlert("[ALERT] Hardware Watchdog: Homeserver (HP 15) heartbeat lost (>25s). Possible system freeze or power down.");
     }
 
     // Startup grace period check
     if (!hadInitialHeartbeat && (now > 35000) && !alertDispatchedForHang) {
         alertDispatchedForHang = true;
         Serial.println("[WATCHDOG] No initial heartbeat received after boot timeout.");
-        sendTelegramAlert("⚠️ *[HARDWARE WATCHDOG]* ESP32 đã khởi động nhưng chưa nhận được nhịp tim Serial từ Homeserver.");
+        sendTelegramAlert("[WARN] Hardware Watchdog: ESP32 started but no serial heartbeat received from Homeserver.");
     }
 
     // Update LED visual state based on priority
