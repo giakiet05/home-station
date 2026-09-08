@@ -14,6 +14,8 @@ import (
 	"github.com/giakiet05/home-station/server/internal/collector"
 	"github.com/giakiet05/home-station/server/internal/config"
 	"github.com/giakiet05/home-station/server/internal/handler"
+	"github.com/giakiet05/home-station/server/internal/model"
+	"github.com/giakiet05/home-station/server/internal/notifier"
 )
 
 func main() {
@@ -37,6 +39,24 @@ func main() {
 
 	// Initialize serial collector worker
 	serialCollector := collector.NewSerialCollector(cfg, logger)
+
+	// Initialize Telegram components if enabled
+	if cfg.TelegramEnabled && cfg.TelegramBotToken != "" && cfg.TelegramChatID != 0 {
+		telegramClient := notifier.NewHTTPTelegramClient(cfg.TelegramBotToken, logger)
+
+		alertManager := notifier.NewAlertManager(cfg, telegramClient, logger)
+		serialCollector.SetListener(func(t model.Telemetry) {
+			alertManager.ProcessTelemetry(ctx, t)
+		})
+
+		botListener := notifier.NewBotListener(cfg, telegramClient, serialCollector, logger)
+		botListener.Start(ctx)
+
+		logger.Info("Telegram notifications and authorized bot listener active",
+			"authorized_chat_id", cfg.TelegramChatID,
+			"cooldown_sec", cfg.AlertCooldownSec)
+	}
+
 	serialCollector.Start(ctx)
 
 	// Initialize HTTP router

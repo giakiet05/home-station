@@ -15,6 +15,9 @@ import (
 	"go.bug.st/serial"
 )
 
+// TelemetryListener defines a callback invoked on fresh telemetry or state changes.
+type TelemetryListener func(t model.Telemetry)
+
 // SerialCollector handles background serial data ingestion and concurrency-safe storage.
 type SerialCollector struct {
 	cfg        *config.Config
@@ -22,6 +25,7 @@ type SerialCollector struct {
 	mu         sync.RWMutex
 	latest     model.Telemetry
 	reconnects uint64
+	listener   TelemetryListener
 }
 
 // NewSerialCollector initializes a new SerialCollector instance.
@@ -35,6 +39,13 @@ func NewSerialCollector(cfg *config.Config, logger *slog.Logger) *SerialCollecto
 			LastSeen:     time.Time{},
 		},
 	}
+}
+
+// SetListener registers a callback invoked whenever telemetry arrives or device state transitions.
+func (c *SerialCollector) SetListener(listener TelemetryListener) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.listener = listener
 }
 
 // GetLatest returns a thread-safe copy of the latest recorded sensor telemetry.
@@ -79,6 +90,9 @@ func (c *SerialCollector) ParseLine(line string) (*model.Telemetry, error) {
 
 // Start initiates the collector loop in the background.
 func (c *SerialCollector) Start(ctx context.Context) {
+	// Start liveness watchdog
+	go c.watchdogLoop(ctx)
+
 	if c.cfg.MockMode {
 		c.logger.Info("Serial collector starting in MOCK mode")
 		go c.runMockLoop(ctx)
@@ -87,6 +101,28 @@ func (c *SerialCollector) Start(ctx context.Context) {
 
 	c.logger.Info("Serial collector starting", "port", c.cfg.SerialPort, "baud", c.cfg.BaudRate)
 	go c.runSerialLoop(ctx)
+}
+
+// watchdogLoop periodically checks telemetry freshness and notifies listeners.
+func (c *SerialCollector) watchdogLoop(ctx context.Context) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			current := c.GetLatest()
+			c.mu.RLock()
+			listener := c.listener
+			c.mu.RUnlock()
+
+			if listener != nil {
+				listener(current)
+			}
+		}
+	}
 }
 
 // runSerialLoop continuously reads serial data and handles automatic reconnection.
@@ -114,7 +150,12 @@ func (c *SerialCollector) runSerialLoop(ctx context.Context) {
 
 			c.mu.Lock()
 			c.latest.DeviceOnline = false
+			listener := c.listener
 			c.mu.Unlock()
+
+			if listener != nil {
+				listener(c.GetLatest())
+			}
 
 			select {
 			case <-ctx.Done():
@@ -131,7 +172,12 @@ func (c *SerialCollector) runSerialLoop(ctx context.Context) {
 		c.mu.Lock()
 		c.latest.DeviceOnline = false
 		c.reconnects++
+		listener := c.listener
 		c.mu.Unlock()
+
+		if listener != nil {
+			listener(c.GetLatest())
+		}
 
 		select {
 		case <-ctx.Done():
@@ -162,7 +208,12 @@ func (c *SerialCollector) readFromPort(ctx context.Context, port serial.Port) {
 
 		c.mu.Lock()
 		c.latest = *telemetry
+		listener := c.listener
 		c.mu.Unlock()
+
+		if listener != nil {
+			listener(*telemetry)
+		}
 
 		c.logger.Debug("Telemetry updated",
 			"temp", telemetry.Temperature,
@@ -202,7 +253,12 @@ func (c *SerialCollector) runMockLoop(ctx context.Context) {
 
 			c.mu.Lock()
 			c.latest = t
+			listener := c.listener
 			c.mu.Unlock()
+
+			if listener != nil {
+				listener(t)
+			}
 		}
 	}
 }
