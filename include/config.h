@@ -30,7 +30,7 @@ namespace Config {
     constexpr float SEA_LEVEL_PRESSURE_HPA = 1013.25f;
 
     // WiFi Configuration for Hardware Watchdog
-    constexpr const char* WIFI_SSID = "REDACTED_WIFI_SSID";
+    constexpr const char* WIFI_SSID = "Unknown";
     constexpr const char* WIFI_PASSWORD = "REDACTED_WIFI_PASSWORD";
 
     // Telegram Bot Configuration for Hardware Watchdog
