@@ -166,7 +166,12 @@ func (c *SerialCollector) runSerialLoop(ctx context.Context) {
 		}
 
 		c.logger.Info("Serial port opened successfully", "port", c.cfg.SerialPort)
+
+		heartbeatCtx, cancelHeartbeat := context.WithCancel(ctx)
+		go c.writeHeartbeatLoop(heartbeatCtx, port)
+
 		c.readFromPort(ctx, port)
+		cancelHeartbeat()
 		_ = port.Close()
 
 		c.mu.Lock()
@@ -224,6 +229,25 @@ func (c *SerialCollector) readFromPort(ctx context.Context, port serial.Port) {
 
 	if err := scanner.Err(); err != nil {
 		c.logger.Error("Error scanning serial port stream", "error", err.Error())
+	}
+}
+
+// writeHeartbeatLoop periodically writes ping frames down the serial wire to maintain watchdog heartbeat.
+func (c *SerialCollector) writeHeartbeatLoop(ctx context.Context, port serial.Port) {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			payload := []byte("{\"type\":\"ping\"}\n")
+			if _, err := port.Write(payload); err != nil {
+				c.logger.Debug("Failed to write serial heartbeat frame", "error", err.Error())
+				return
+			}
+		}
 	}
 }
 
