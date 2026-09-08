@@ -54,8 +54,8 @@ func (c *SerialCollector) GetLatest() model.Telemetry {
 	defer c.mu.RUnlock()
 
 	copyTelemetry := c.latest
-	// Consider device offline if no new telemetry arrived in last 10 seconds
-	if !copyTelemetry.LastSeen.IsZero() && time.Since(copyTelemetry.LastSeen) > 10*time.Second {
+	// Consider device offline if no new telemetry arrived in last 30 seconds
+	if !copyTelemetry.LastSeen.IsZero() && time.Since(copyTelemetry.LastSeen) > 30*time.Second {
 		copyTelemetry.DeviceOnline = false
 	}
 	return copyTelemetry
