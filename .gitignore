@@ -3,6 +3,12 @@
 .pioenvs/
 .piolibdeps/
 
+# Credentials and secrets
+include/secrets.h
+.env
+.env.*
+!.env.example
+
 # IDE files
 .vscode/
 .idea/

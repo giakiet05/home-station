@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "secrets.h"
 
 /**
  * @file config.h
@@ -29,13 +30,13 @@ namespace Config {
     constexpr uint8_t I2C_ADDR_BMP280_ALT = 0x76;
     constexpr float SEA_LEVEL_PRESSURE_HPA = 1013.25f;
 
-    // WiFi Configuration for Hardware Watchdog
-    constexpr const char* WIFI_SSID = "Unknown";
-    constexpr const char* WIFI_PASSWORD = "REDACTED_WIFI_PASSWORD";
+    // WiFi Configuration for Hardware Watchdog (Delegated to secrets.h)
+    constexpr const char* WIFI_SSID = Secrets::WIFI_SSID;
+    constexpr const char* WIFI_PASSWORD = Secrets::WIFI_PASSWORD;
 
-    // Telegram Bot Configuration for Hardware Watchdog
-    constexpr const char* TELEGRAM_BOT_TOKEN = "REDACTED_TELEGRAM_BOT_TOKEN";
-    constexpr const char* TELEGRAM_CHAT_ID = "8465841006";
+    // Telegram Bot Configuration for Hardware Watchdog (Delegated to secrets.h)
+    constexpr const char* TELEGRAM_BOT_TOKEN = Secrets::TELEGRAM_BOT_TOKEN;
+    constexpr const char* TELEGRAM_CHAT_ID = Secrets::TELEGRAM_CHAT_ID;
 
     // Hardware ADC parameters for ESP32-C3
     constexpr float ADC_REF_VOLTAGE = 3.3f;
