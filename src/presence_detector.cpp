@@ -3,7 +3,8 @@
 PresenceDetector::PresenceDetector()
     : bleScan_(nullptr),
       lastBleScanMs_(0),
-      lastPresenceTriggerMs_(0),
+      lastLightTriggerMs_(0),
+      lastBleTriggerMs_(0),
       prevLightAdc_(0),
       wasNightMode_(false),
       presenceDetected_(false),
@@ -32,11 +33,14 @@ void PresenceDetector::onResult(NimBLEAdvertisedDevice* advertisedDevice) {
 void PresenceDetector::update(uint16_t currentLightAdc, bool isNightMode) {
     uint32_t now = millis();
 
-    // 1. Detect abrupt light step jump (Dark -> Light = someone entered and flipped switch)
-    if (wasNightMode_ && !isNightMode && (currentLightAdc >= 1200)) {
-        if (now - lastPresenceTriggerMs_ >= 60000) { // 60s cooldown for light trigger
-            triggerPresence("LIGHT_ON (Phong vua bat den)");
-        }
+    // 1. Detect abrupt light step jump (Dark -> Light or sharp +400 ADC rise)
+    bool lightJumped = (wasNightMode_ && !isNightMode) ||
+                       (prevLightAdc_ > 0 && currentLightAdc >= 800 && prevLightAdc_ < 800) ||
+                       (prevLightAdc_ > 0 && currentLightAdc >= prevLightAdc_ + 400 && currentLightAdc >= 800);
+
+    if (lightJumped && (now - lastLightTriggerMs_ >= 15000)) { // 15s cooldown for light flip
+        lastLightTriggerMs_ = now;
+        triggerPresence("LIGHT_ON (Phong vua bat den)");
     }
     wasNightMode_ = isNightMode;
     prevLightAdc_ = currentLightAdc;
@@ -50,8 +54,9 @@ void PresenceDetector::update(uint16_t currentLightAdc, bool isNightMode) {
         strongestRssi_ = scanStrongestRssi_;
         bleScan_->clearResults();
 
-        // If strong BLE device is within close proximity (RSSI > -65 dBm) and cooldown elapsed
-        if (strongestRssi_ > -65 && (now - lastPresenceTriggerMs_ >= 180000)) { // 3-minute cooldown
+        // If strong BLE device is within close proximity (RSSI > -60 dBm) and cooldown elapsed
+        if (strongestRssi_ > -60 && (now - lastBleTriggerMs_ >= 120000)) { // 2-minute cooldown
+            lastBleTriggerMs_ = now;
             triggerPresence("BLE_PROXIMITY (Dien thoai/Smartwatch toi gan)");
         }
     }
@@ -60,10 +65,10 @@ void PresenceDetector::update(uint16_t currentLightAdc, bool isNightMode) {
 void PresenceDetector::triggerPresence(const char* reason) {
     presenceDetected_ = true;
     triggerReason_ = reason;
-    lastPresenceTriggerMs_ = millis();
     Serial.printf("[PRESENCE] Room Entry Detected! Trigger: %s | Strongest BLE: %d dBm\n",
                   reason, strongestRssi_);
 }
+
 
 bool PresenceDetector::isPresenceDetected() const {
     return presenceDetected_;

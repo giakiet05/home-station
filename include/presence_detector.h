@@ -60,7 +60,8 @@ public:
 private:
     NimBLEScan* bleScan_;
     uint32_t lastBleScanMs_;
-    uint32_t lastPresenceTriggerMs_;
+    uint32_t lastLightTriggerMs_;
+    uint32_t lastBleTriggerMs_;
     uint16_t prevLightAdc_;
     bool wasNightMode_;
     bool presenceDetected_;

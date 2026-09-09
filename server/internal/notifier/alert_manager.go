@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -144,27 +145,43 @@ func (am *AlertManager) ProcessTelemetry(ctx context.Context, t model.Telemetry)
 	}
 
 	// 5. Handle Room Presence Detection (LDR Light Step / BLE Proximity)
-	if t.PresenceDetected && now.Sub(am.lastPresenceTime) >= 3*time.Minute {
-		am.lastPresenceTime = now
-		trigger := t.PresenceTrigger
-		if trigger == "" {
-			trigger = "LDR / BLE Sensor"
+	if t.PresenceDetected {
+		isLightTrigger := strings.Contains(t.PresenceTrigger, "LIGHT_ON")
+		cooldown := 15 * time.Second
+		if !isLightTrigger {
+			cooldown = 90 * time.Second
 		}
 
-		presenceMsg := fmt.Sprintf("🚶‍♂️ <b>[PRESENCE DETECTED] Chào mừng Kiệt về phòng!</b>\n\n"+
-			"<b>Khu vực:</b> <code>Gác lửng (Mezzanine)</code>\n"+
-			"<b>Kích hoạt bởi:</b> <code>%s</code>\n"+
-			"<b>Nhiệt độ:</b> <code>%.1f°C</code> | <b>Độ ẩm:</b> <code>%.1f%%</code>\n"+
-			"<b>Ánh sáng:</b> <code>%s (%d ADC)</code>\n"+
-			"<b>BLE RSSI:</b> <code>%d dBm</code>",
-			trigger,
-			t.Temperature,
-			t.Humidity,
-			t.LightStatus,
-			t.LightRawADC,
-			t.BLERssi)
+		if now.Sub(am.lastPresenceTime) >= cooldown {
+			am.lastPresenceTime = now
+			trigger := t.PresenceTrigger
+			if trigger == "" {
+				trigger = "LDR / BLE Sensor"
+			}
 
-		am.sendAlert(ctx, presenceMsg)
+			presenceMsg := fmt.Sprintf("🚶‍♂️ <b>[PRESENCE DETECTED] Chào mừng Kiệt về phòng!</b>\n\n"+
+				"<b>Khu vực:</b> <code>Gác lửng (Mezzanine)</code>\n"+
+				"<b>Kích hoạt bởi:</b> <code>%s</code>\n"+
+				"<b>Nhiệt độ:</b> <code>%.1f°C</code> | <b>Độ ẩm:</b> <code>%.1f%%</code>\n"+
+				"<b>Ánh sáng:</b> <code>%s (%d ADC)</code>\n"+
+				"<b>BLE RSSI:</b> <code>%d dBm</code>",
+				trigger,
+				t.Temperature,
+				t.Humidity,
+				t.LightStatus,
+				t.LightRawADC,
+				t.BLERssi)
+
+			am.logger.Info("Dispatching room presence Telegram notification",
+				"trigger", trigger,
+				"light_adc", t.LightRawADC,
+				"ble_rssi", t.BLERssi)
+			am.sendAlert(ctx, presenceMsg)
+		} else {
+			am.logger.Debug("Presence detected but dropped due to cooldown",
+				"trigger", t.PresenceTrigger,
+				"elapsed_sec", now.Sub(am.lastPresenceTime).Seconds())
+		}
 	}
 }
 
