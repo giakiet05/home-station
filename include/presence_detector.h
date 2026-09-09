@@ -9,6 +9,11 @@
  * @brief Combines LDR light transitions and BLE beacon proximity to detect room entry.
  */
 
+enum class RoomPresenceState {
+    AWAY,
+    IN_ROOM
+};
+
 class PresenceDetector : public NimBLEAdvertisedDeviceCallbacks {
 public:
     /**
@@ -60,13 +65,14 @@ public:
 private:
     NimBLEScan* bleScan_;
     uint32_t lastBleScanMs_;
-    uint32_t lastLightTriggerMs_;
-    uint32_t lastBleTriggerMs_;
+    uint32_t lastStrongBleMs_;
+    uint32_t lastPresenceTriggerMs_;
     uint16_t prevLightAdc_;
     bool wasNightMode_;
     bool presenceDetected_;
     int8_t strongestRssi_;
     int8_t scanStrongestRssi_;
+    RoomPresenceState state_;
     String triggerReason_;
 
     /**
@@ -75,4 +81,5 @@ private:
      */
     void triggerPresence(const char* reason);
 };
+
 

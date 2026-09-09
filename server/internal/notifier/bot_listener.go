@@ -117,6 +117,17 @@ func (b *BotListener) handleCommand(ctx context.Context, chatID int64, text stri
 			lightStr = fmt.Sprintf("%s (%d ADC)", t.LightStatus, t.LightRawADC)
 		}
 
+		bleStr := "Không phát hiện (Away)"
+		if t.BLERssi > -100 && t.BLERssi != 0 {
+			if t.BLERssi >= -60 {
+				bleStr = fmt.Sprintf("Gần / Ở phòng (%d dBm)", t.BLERssi)
+			} else if t.BLERssi >= -75 {
+				bleStr = fmt.Sprintf("Vừa phải (%d dBm)", t.BLERssi)
+			} else {
+				bleStr = fmt.Sprintf("Yếu / Xa (%d dBm)", t.BLERssi)
+			}
+		}
+
 		msg := fmt.Sprintf("🏠 <b>Home Station Live Telemetry</b>\n\n"+
 			"<b>Status:</b> <code>%s</code>\n"+
 			"<b>Device:</b> <code>%s</code>\n"+
@@ -124,6 +135,7 @@ func (b *BotListener) handleCommand(ctx context.Context, chatID int64, text stri
 			"<b>Humidity:</b> <code>%.1f%%</code>\n"+
 			"<b>Smoke / Gas:</b> <code>%s (%d ADC)</code>\n"+
 			"<b>Ambient Light:</b> <code>%s</code>\n"+
+			"<b>BLE Proximity:</b> <code>%s</code>\n"+
 			"<b>Voltage:</b> <code>%.3fV</code>\n"+
 			"<b>Uptime:</b> <code>%d seconds</code>\n"+
 			"<b>Last seen:</b> <code>%s</code>",
@@ -134,11 +146,13 @@ func (b *BotListener) handleCommand(ctx context.Context, chatID int64, text stri
 			t.SmokeStatus,
 			t.SmokeRawADC,
 			lightStr,
+			bleStr,
 			t.SmokeVoltage,
 			t.UptimeSec,
 			t.LastSeen.Format("2006-01-02 15:04:05 UTC"))
 
 		_ = b.client.SendMessage(ctx, chatID, msg)
+
 
 	case "/ping", "ping":
 		t := b.telemetry.GetLatest()

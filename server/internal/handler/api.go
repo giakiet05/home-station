@@ -79,6 +79,7 @@ func (r *Router) handleGetHomepageWidgetData(w http.ResponseWriter, req *http.Re
 
 	smokeStr := fmt.Sprintf("%s (%d)", t.SmokeStatus, t.SmokeRawADC)
 	lightStr := classifyLightLevel(t.LightRawADC, t.LightStatus)
+	bleStr := classifyBLESignal(t.BLERssi)
 	deviceState := "Online"
 	if !t.DeviceOnline {
 		deviceState = "Offline"
@@ -94,6 +95,7 @@ func (r *Router) handleGetHomepageWidgetData(w http.ResponseWriter, req *http.Re
 		Humidity:    humStr,
 		SmokeLevel:  smokeStr,
 		LightLevel:  lightStr,
+		BLESignal:   bleStr,
 		Status:      t.SmokeStatus,
 		DeviceState: deviceState,
 		LastUpdated: lastUpdated,
@@ -115,6 +117,19 @@ func classifyLightLevel(adc uint16, status string) string {
 		return fmt.Sprintf("Vừa phải (%d)", adc)
 	}
 	return fmt.Sprintf("Yếu / Tối (%d)", adc)
+}
+
+// classifyBLESignal converts raw BLE RSSI into human-readable proximity string.
+func classifyBLESignal(rssi int8) string {
+	if rssi == 0 || rssi <= -100 {
+		return "Không phát hiện (Away)"
+	}
+	if rssi >= -60 {
+		return fmt.Sprintf("Gần / Ở phòng (%d dBm)", rssi)
+	} else if rssi >= -75 {
+		return fmt.Sprintf("Vừa phải (%d dBm)", rssi)
+	}
+	return fmt.Sprintf("Yếu / Xa (%d dBm)", rssi)
 }
 
 // handleDashboardPage renders a clean, self-contained Dark Mode status card.
@@ -168,6 +183,10 @@ func (r *Router) handleDashboardPage(w http.ResponseWriter, req *http.Request) {
                 <div class="value" style="font-size: 1.2rem;">%s</div>
             </div>
             <div class="metric full-width">
+                <div class="label">BLE Signal / Proximity</div>
+                <div class="value" style="font-size: 1.2rem;">%s</div>
+            </div>
+            <div class="metric full-width">
                 <div class="label">Smoke & Gas Detection</div>
                 <div class="value" style="font-size: 1.2rem;">%s <span style="font-size: 0.85rem; color: #94a3b8;">(ADC: %d)</span></div>
             </div>
@@ -183,6 +202,7 @@ func (r *Router) handleDashboardPage(w http.ResponseWriter, req *http.Request) {
 		t.Temperature,
 		t.Humidity,
 		classifyLightLevel(t.LightRawADC, t.LightStatus),
+		classifyBLESignal(t.BLERssi),
 		t.SmokeStatus,
 		t.SmokeRawADC,
 		t.LastSeen.Format("15:04:05 UTC"),
@@ -190,6 +210,7 @@ func (r *Router) handleDashboardPage(w http.ResponseWriter, req *http.Request) {
 
 	_, _ = w.Write([]byte(html))
 }
+
 
 func getBadgeColor(online bool) string {
 	if online {
