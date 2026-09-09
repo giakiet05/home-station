@@ -117,16 +117,17 @@ func (b *BotListener) handleCommand(ctx context.Context, chatID int64, text stri
 			lightStr = fmt.Sprintf("%s (%d ADC)", t.LightStatus, t.LightRawADC)
 		}
 
-		bleStr := "Không phát hiện (Away)"
+		bleStr := "Undetected (Away)"
 		if t.BLERssi > -100 && t.BLERssi != 0 {
 			if t.BLERssi >= -60 {
-				bleStr = fmt.Sprintf("Gần / Ở phòng (%d dBm)", t.BLERssi)
+				bleStr = fmt.Sprintf("Near / In Room (%d dBm)", t.BLERssi)
 			} else if t.BLERssi >= -75 {
-				bleStr = fmt.Sprintf("Vừa phải (%d dBm)", t.BLERssi)
+				bleStr = fmt.Sprintf("Moderate (%d dBm)", t.BLERssi)
 			} else {
-				bleStr = fmt.Sprintf("Yếu / Xa (%d dBm)", t.BLERssi)
+				bleStr = fmt.Sprintf("Weak / Far (%d dBm)", t.BLERssi)
 			}
 		}
+
 
 		msg := fmt.Sprintf("🏠 <b>Home Station Live Telemetry</b>\n\n"+
 			"<b>Status:</b> <code>%s</code>\n"+

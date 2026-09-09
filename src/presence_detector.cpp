@@ -68,11 +68,12 @@ void PresenceDetector::update(uint16_t currentLightAdc, bool isNightMode) {
         if (strongestRssi_ >= -60 && (now - lastPresenceTriggerMs_ >= 30000)) {
             state_ = RoomPresenceState::IN_ROOM;
             lastStrongBleMs_ = now;
-            triggerPresence("BLE_PROXIMITY (Dien thoai/Smartwatch toi gan)");
+            triggerPresence("BLE_PROXIMITY (Phone/Smartwatch nearby)");
         } else if (lightTurnedOn && (now - lastPresenceTriggerMs_ >= 15000)) {
             state_ = RoomPresenceState::IN_ROOM;
-            triggerPresence("LIGHT_ON (Phong vua bat den)");
+            triggerPresence("LIGHT_ON (Room light turned on)");
         }
+
     }
 }
 

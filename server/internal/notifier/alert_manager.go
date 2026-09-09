@@ -159,11 +159,11 @@ func (am *AlertManager) ProcessTelemetry(ctx context.Context, t model.Telemetry)
 				trigger = "LDR / BLE Sensor"
 			}
 
-			presenceMsg := fmt.Sprintf("🚶‍♂️ <b>[PRESENCE DETECTED] Chào mừng Kiệt về phòng!</b>\n\n"+
-				"<b>Khu vực:</b> <code>Gác lửng (Mezzanine)</code>\n"+
-				"<b>Kích hoạt bởi:</b> <code>%s</code>\n"+
-				"<b>Nhiệt độ:</b> <code>%.1f°C</code> | <b>Độ ẩm:</b> <code>%.1f%%</code>\n"+
-				"<b>Ánh sáng:</b> <code>%s (%d ADC)</code>\n"+
+			presenceMsg := fmt.Sprintf("🚶‍♂️ <b>[PRESENCE DETECTED] Welcome home, Kiet!</b>\n\n"+
+				"<b>Area:</b> <code>Mezzanine Room</code>\n"+
+				"<b>Trigger:</b> <code>%s</code>\n"+
+				"<b>Temperature:</b> <code>%.1f°C</code> | <b>Humidity:</b> <code>%.1f%%</code>\n"+
+				"<b>Ambient Light:</b> <code>%s (%d ADC)</code>\n"+
 				"<b>BLE RSSI:</b> <code>%d dBm</code>",
 				trigger,
 				t.Temperature,
@@ -171,6 +171,7 @@ func (am *AlertManager) ProcessTelemetry(ctx context.Context, t model.Telemetry)
 				t.LightStatus,
 				t.LightRawADC,
 				t.BLERssi)
+
 
 			am.logger.Info("Dispatching room presence Telegram notification",
 				"trigger", trigger,

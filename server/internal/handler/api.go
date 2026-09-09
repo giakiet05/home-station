@@ -112,25 +112,26 @@ func classifyLightLevel(adc uint16, status string) string {
 		return "N/A"
 	}
 	if adc >= 3000 {
-		return fmt.Sprintf("Mạnh / Sáng (%d)", adc)
+		return fmt.Sprintf("Direct Sunlight / Bright (%d)", adc)
 	} else if adc >= 1000 {
-		return fmt.Sprintf("Vừa phải (%d)", adc)
+		return fmt.Sprintf("Moderate / Indoor Light (%d)", adc)
 	}
-	return fmt.Sprintf("Yếu / Tối (%d)", adc)
+	return fmt.Sprintf("Dim / Dark (%d)", adc)
 }
 
 // classifyBLESignal converts raw BLE RSSI into human-readable proximity string.
 func classifyBLESignal(rssi int8) string {
 	if rssi == 0 || rssi <= -100 {
-		return "Không phát hiện (Away)"
+		return "Undetected (Away)"
 	}
 	if rssi >= -60 {
-		return fmt.Sprintf("Gần / Ở phòng (%d dBm)", rssi)
+		return fmt.Sprintf("Near / In Room (%d dBm)", rssi)
 	} else if rssi >= -75 {
-		return fmt.Sprintf("Vừa phải (%d dBm)", rssi)
+		return fmt.Sprintf("Moderate (%d dBm)", rssi)
 	}
-	return fmt.Sprintf("Yếu / Xa (%d dBm)", rssi)
+	return fmt.Sprintf("Weak / Far (%d dBm)", rssi)
 }
+
 
 // handleDashboardPage renders a clean, self-contained Dark Mode status card.
 func (r *Router) handleDashboardPage(w http.ResponseWriter, req *http.Request) {

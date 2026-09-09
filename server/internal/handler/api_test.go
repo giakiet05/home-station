@@ -114,10 +114,11 @@ func TestGetHomepageWidgetData(t *testing.T) {
 	if widget.Humidity != "75.0%" {
 		t.Errorf("expected humidity '75.0%%', got '%s'", widget.Humidity)
 	}
-	if widget.LightLevel != "Vừa phải (1850)" {
-		t.Errorf("expected light level 'Vừa phải (1850)', got '%s'", widget.LightLevel)
+	if widget.LightLevel != "Moderate / Indoor Light (1850)" {
+		t.Errorf("expected light level 'Moderate / Indoor Light (1850)', got '%s'", widget.LightLevel)
 	}
 	if widget.DeviceState != "Online" {
 		t.Errorf("expected device state 'Online', got '%s'", widget.DeviceState)
 	}
 }
+
