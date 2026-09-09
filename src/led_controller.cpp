@@ -44,8 +44,8 @@ void LedController::setNightMode(bool isNight) {
 void LedController::setState(LedState state) {
     currentState = state;
 
-    // In Night Mode, turn off non-critical status LEDs to eliminate glare while sleeping
-    if (isNightMode && (currentState == LedState::SERVER_OK || currentState == LedState::BOOTING)) {
+    // In Night Mode, turn off all status LEDs to keep room dark (except GAS_DANGER which is an emergency)
+    if (isNightMode && (currentState != LedState::GAS_DANGER)) {
         applyColor(false, false, false); // Completely OFF
         return;
     }
@@ -60,11 +60,11 @@ void LedController::setState(LedState state) {
             applyColor(false, true, false);
             break;
         case LedState::SERVER_HANG:
-            // Red (Critical - always shown)
+            // Red (Critical - server freeze/offline)
             applyColor(true, false, false);
             break;
         case LedState::GAS_DANGER:
-            // Yellow / Orange (Emergency - always shown)
+            // Yellow / Orange (Emergency - always shown even at night)
             applyColor(true, true, false);
             break;
     }
@@ -72,6 +72,15 @@ void LedController::setState(LedState state) {
 
 void LedController::update() {
     uint32_t now = millis();
+
+    // In night mode, keep the onboard LED off as well
+    if (isNightMode) {
+        if (builtinLedActive) {
+            builtinLedActive = false;
+            digitalWrite(Config::PIN_BUILTIN_LED, HIGH); // OFF
+        }
+        return;
+    }
 
     // Blink built-in LED (GPIO8) every 2 seconds as a heartbeat indicator
     if (now - lastHeartbeatBlinkMs >= 2000) {

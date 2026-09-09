@@ -27,8 +27,8 @@ namespace Config {
 
     // LDR Ambient Light Sensor Pin Configuration
     constexpr int8_t PIN_LDR_AO = 1;         // GPIO1 (ADC1_CH1)
-    constexpr uint16_t LDR_NIGHT_THRESHOLD_ADC = 350;   // Below this value is considered night/dark
-    constexpr uint16_t LDR_SUNNY_THRESHOLD_ADC = 3200;  // Above this value is direct sunlight
+    constexpr uint16_t LDR_NIGHT_THRESHOLD_ADC = 800;   // Below this value is considered night/dark (<800 ADC)
+    constexpr uint16_t LDR_SUNNY_THRESHOLD_ADC = 3400;  // Above this value is direct sunlight (>3400 ADC)
 
     // Fallback/Optional I2C Addresses & Parameters
     constexpr int8_t PIN_I2C_SDA = 8;
