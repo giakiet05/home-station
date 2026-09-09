@@ -183,9 +183,11 @@ void SensorManager::printReadings(const SensorReadings &readings) {
     const char *statusStr = airQualityStatusToString(readings.air_status);
     const char *lightStatusStr = ambientLightStatusToString(readings.light_status);
     const char *isNightStr = readings.is_night_mode ? "true" : "false";
+    const char *presenceStr = readings.presence_detected ? "true" : "false";
+    const char *triggerStr = readings.presence_trigger ? readings.presence_trigger : "NONE";
 
     // Single-line structured JSON payload for downstream collectors
-    Serial.printf("{\"temp\":%.1f,\"humidity\":%.1f,\"smoke_raw\":%u,\"smoke_voltage\":%.3f,\"smoke_pct\":%.1f,\"status\":\"%s\",\"light_raw\":%u,\"light_pct\":%.1f,\"light_status\":\"%s\",\"is_night\":%s,\"uptime_ms\":%lu}\n",
+    Serial.printf("{\"temp\":%.1f,\"humidity\":%.1f,\"smoke_raw\":%u,\"smoke_voltage\":%.3f,\"smoke_pct\":%.1f,\"status\":\"%s\",\"light_raw\":%u,\"light_pct\":%.1f,\"light_status\":\"%s\",\"is_night\":%s,\"presence\":%s,\"ble_rssi\":%d,\"presence_trigger\":\"%s\",\"uptime_ms\":%lu}\n",
                   temp,
                   hum,
                   readings.mq2_raw_adc,
@@ -196,5 +198,8 @@ void SensorManager::printReadings(const SensorReadings &readings) {
                   readings.light_percentage,
                   lightStatusStr,
                   isNightStr,
+                  presenceStr,
+                  readings.ble_rssi,
+                  triggerStr,
                   millis());
 }

@@ -74,19 +74,22 @@ func (c *SerialCollector) ParseLine(line string) (*model.Telemetry, error) {
 	}
 
 	telemetry := &model.Telemetry{
-		Temperature:  raw.Temperature,
-		Humidity:     raw.Humidity,
-		SmokeRawADC:  raw.SmokeRawADC,
-		SmokeVoltage: raw.SmokeVoltage,
-		SmokePercent: raw.SmokePercent,
-		SmokeStatus:  raw.Status,
-		LightRawADC:  raw.LightRawADC,
-		LightPercent: raw.LightPercent,
-		LightStatus:  raw.LightStatus,
-		IsNightMode:  raw.IsNightMode,
-		UptimeSec:    raw.UptimeMs / 1000,
-		DeviceOnline: true,
-		LastSeen:     time.Now().UTC(),
+		Temperature:      raw.Temperature,
+		Humidity:         raw.Humidity,
+		SmokeRawADC:      raw.SmokeRawADC,
+		SmokeVoltage:     raw.SmokeVoltage,
+		SmokePercent:     raw.SmokePercent,
+		SmokeStatus:      raw.Status,
+		LightRawADC:      raw.LightRawADC,
+		LightPercent:     raw.LightPercent,
+		LightStatus:      raw.LightStatus,
+		IsNightMode:      raw.IsNightMode,
+		PresenceDetected: raw.Presence,
+		BLERssi:          raw.BLERssi,
+		PresenceTrigger:  raw.PresenceTrigger,
+		UptimeSec:        raw.UptimeMs / 1000,
+		DeviceOnline:     true,
+		LastSeen:         time.Now().UTC(),
 	}
 
 	return telemetry, nil

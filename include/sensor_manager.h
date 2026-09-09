@@ -50,6 +50,10 @@ struct SensorReadings {
     bool is_night_mode;         /**< True if ambient light is below night threshold */
     AmbientLightStatus light_status; /**< Categorized ambient illumination status */
 
+    bool presence_detected;     /**< True if human presence / entry was triggered */
+    int8_t ble_rssi;            /**< Strongest observed BLE signal strength (dBm) */
+    const char* presence_trigger; /**< Trigger reason for presence event */
+
     bool dht_valid;             /**< Flag indicating successful DHT11 sample */
     bool aht20_valid;           /**< Flag indicating successful AHT20 sample */
     bool bmp280_valid;          /**< Flag indicating successful BMP280 sample */

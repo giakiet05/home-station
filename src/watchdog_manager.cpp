@@ -23,7 +23,7 @@ void WatchdogManager::init() {
     delay(200);
 
     WiFi.mode(WIFI_STA);
-    WiFi.setSleep(false); // Prevent RF modem sleep during handshake
+    WiFi.setSleep(true); // Enable modem sleep required for WiFi + BLE coexistence
     WiFi.setTxPower(WIFI_POWER_8_5dBm); // Critical for ESP32-C3 Super Mini voltage stability
     WiFi.setAutoReconnect(true);
 

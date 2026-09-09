@@ -23,13 +23,14 @@ const (
 
 // AlertManager tracks state transitions and enforces cooldown intervals to prevent alert spam.
 type AlertManager struct {
-	cfg            *config.Config
-	client         TelegramClient
-	logger         *slog.Logger
-	mu             sync.Mutex
-	lastSeverity   AlertSeverity
-	lastAlertTime  time.Time
-	wasOffline     bool
+	cfg              *config.Config
+	client           TelegramClient
+	logger           *slog.Logger
+	mu               sync.Mutex
+	lastSeverity     AlertSeverity
+	lastAlertTime    time.Time
+	lastPresenceTime time.Time
+	wasOffline       bool
 }
 
 // NewAlertManager creates a new AlertManager instance.
@@ -140,6 +141,30 @@ func (am *AlertManager) ProcessTelemetry(ctx context.Context, t model.Telemetry)
 			am.lastAlertTime = now
 			am.sendAlert(ctx, msg)
 		}
+	}
+
+	// 5. Handle Room Presence Detection (LDR Light Step / BLE Proximity)
+	if t.PresenceDetected && now.Sub(am.lastPresenceTime) >= 3*time.Minute {
+		am.lastPresenceTime = now
+		trigger := t.PresenceTrigger
+		if trigger == "" {
+			trigger = "LDR / BLE Sensor"
+		}
+
+		presenceMsg := fmt.Sprintf("🚶‍♂️ <b>[PRESENCE DETECTED] Chào mừng Kiệt về phòng!</b>\n\n"+
+			"<b>Khu vực:</b> <code>Gác lửng (Mezzanine)</code>\n"+
+			"<b>Kích hoạt bởi:</b> <code>%s</code>\n"+
+			"<b>Nhiệt độ:</b> <code>%.1f°C</code> | <b>Độ ẩm:</b> <code>%.1f%%</code>\n"+
+			"<b>Ánh sáng:</b> <code>%s (%d ADC)</code>\n"+
+			"<b>BLE RSSI:</b> <code>%d dBm</code>",
+			trigger,
+			t.Temperature,
+			t.Humidity,
+			t.LightStatus,
+			t.LightRawADC,
+			t.BLERssi)
+
+		am.sendAlert(ctx, presenceMsg)
 	}
 }
 

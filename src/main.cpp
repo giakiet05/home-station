@@ -4,12 +4,14 @@
 #include "led_controller.h"
 #include "watchdog_manager.h"
 #include "ir_controller.h"
+#include "presence_detector.h"
 
 namespace {
     SensorManager sensorManager;
     LedController ledController;
     WatchdogManager watchdogManager(ledController);
     IrController irController;
+    PresenceDetector presenceDetector;
 
     uint32_t lastReadTimestampMs = 0;
     String serialInputBuffer = "";
@@ -68,6 +70,9 @@ void setup() {
         Serial.println("[WARN] Sensor initialization returned warning/fallback.");
     }
 
+    // Initialize BLE presence proximity detector (must precede WiFi for RF coexistence)
+    presenceDetector.init();
+
     // Initialize WiFi and hardware watchdog subsystem
     watchdogManager.init();
 
@@ -91,7 +96,19 @@ void loop() {
         lastReadTimestampMs = currentTimestampMs;
 
         currentReadings = sensorManager.read();
+
+        // Update presence detector state machine with latest illumination
+        presenceDetector.update(currentReadings.light_raw_adc, currentReadings.is_night_mode);
+        currentReadings.presence_detected = presenceDetector.isPresenceDetected();
+        currentReadings.ble_rssi = presenceDetector.getStrongestRssi();
+        currentReadings.presence_trigger = presenceDetector.getTriggerReason();
+
         sensorManager.printReadings(currentReadings);
+
+        // Reset one-shot presence trigger after broadcasting
+        if (currentReadings.presence_detected) {
+            presenceDetector.clearPresence();
+        }
 
         // Update Auto Night-Mode state on LED controller based on ambient light
         ledController.setNightMode(currentReadings.is_night_mode);
