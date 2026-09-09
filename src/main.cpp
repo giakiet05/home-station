@@ -3,11 +3,13 @@
 #include "sensor_manager.h"
 #include "led_controller.h"
 #include "watchdog_manager.h"
+#include "ir_controller.h"
 
 namespace {
     SensorManager sensorManager;
     LedController ledController;
     WatchdogManager watchdogManager(ledController);
+    IrController irController;
 
     uint32_t lastReadTimestampMs = 0;
     String serialInputBuffer = "";
@@ -22,9 +24,13 @@ void processSerialInput() {
         char c = static_cast<char>(Serial.read());
         if (c == '\n' || c == '\r') {
             if (serialInputBuffer.length() > 0) {
-                serialInputBuffer.toLowerCase();
-                if (serialInputBuffer.indexOf("ping") >= 0) {
-                    watchdogManager.feedHeartbeat();
+                // Check if command is handled by IR controller
+                if (!irController.handleCommand(serialInputBuffer)) {
+                    String lowerBuf = serialInputBuffer;
+                    lowerBuf.toLowerCase();
+                    if (lowerBuf.indexOf("ping") >= 0) {
+                        watchdogManager.feedHeartbeat();
+                    }
                 }
                 serialInputBuffer = "";
             }
@@ -65,6 +71,9 @@ void setup() {
     // Initialize WiFi and hardware watchdog subsystem
     watchdogManager.init();
 
+    // Initialize IR transmitter for LG AC control
+    irController.init();
+
     Serial.println("[SYSTEM] System startup completed. Entering loop.");
     Serial.println("==================================================");
 }
@@ -83,6 +92,9 @@ void loop() {
 
         currentReadings = sensorManager.read();
         sensorManager.printReadings(currentReadings);
+
+        // Update Auto Night-Mode state on LED controller based on ambient light
+        ledController.setNightMode(currentReadings.is_night_mode);
     }
 
     // 3. Periodic watchdog check and state updates

@@ -10,6 +10,10 @@ type RawESP32Payload struct {
 	SmokeVoltage float64 `json:"smoke_voltage"`
 	SmokePercent float64 `json:"smoke_pct"`
 	Status       string  `json:"status"`
+	LightRawADC  uint16  `json:"light_raw"`
+	LightPercent float64 `json:"light_pct"`
+	LightStatus  string  `json:"light_status"`
+	IsNightMode  bool    `json:"is_night"`
 	UptimeMs     uint64  `json:"uptime_ms"`
 }
 
@@ -21,6 +25,10 @@ type Telemetry struct {
 	SmokeVoltage float64   `json:"smoke_voltage"`
 	SmokePercent float64   `json:"smoke_percent"`
 	SmokeStatus  string    `json:"smoke_status"`
+	LightRawADC  uint16    `json:"light_raw_adc"`
+	LightPercent float64   `json:"light_percent"`
+	LightStatus  string    `json:"light_status"`
+	IsNightMode  bool      `json:"is_night_mode"`
 	UptimeSec    uint64    `json:"uptime_seconds"`
 	DeviceOnline bool      `json:"device_online"`
 	LastSeen     time.Time `json:"last_seen"`

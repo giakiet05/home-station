@@ -3,6 +3,7 @@
 
 LedController::LedController()
     : currentState(LedState::BOOTING),
+      isNightMode(false),
       lastHeartbeatBlinkMs(0),
       builtinLedActive(false) {}
 
@@ -33,8 +34,22 @@ void LedController::applyColor(bool red, bool green, bool blue) {
     digitalWrite(Config::PIN_RGB_BLUE, blue ? HIGH : LOW);
 }
 
+void LedController::setNightMode(bool isNight) {
+    if (isNightMode != isNight) {
+        isNightMode = isNight;
+        setState(currentState);
+    }
+}
+
 void LedController::setState(LedState state) {
     currentState = state;
+
+    // In Night Mode, turn off non-critical status LEDs to eliminate glare while sleeping
+    if (isNightMode && (currentState == LedState::SERVER_OK || currentState == LedState::BOOTING)) {
+        applyColor(false, false, false); // Completely OFF
+        return;
+    }
+
     switch (currentState) {
         case LedState::BOOTING:
             // Blue
@@ -45,11 +60,11 @@ void LedController::setState(LedState state) {
             applyColor(false, true, false);
             break;
         case LedState::SERVER_HANG:
-            // Red
+            // Red (Critical - always shown)
             applyColor(true, false, false);
             break;
         case LedState::GAS_DANGER:
-            // Yellow / Orange (Red + Green)
+            // Yellow / Orange (Emergency - always shown)
             applyColor(true, true, false);
             break;
     }

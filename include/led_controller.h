@@ -33,12 +33,19 @@ public:
     void setState(LedState state);
 
     /**
+     * @brief Configures night mode state (turns off status LED when dark to prevent glare).
+     * @param isNight True if ambient room lighting is dark.
+     */
+    void setNightMode(bool isNight);
+
+    /**
      * @brief Periodic update routine to drive animations and heartbeat blinks.
      */
     void update();
 
 private:
     LedState currentState;
+    bool isNightMode;
     uint32_t lastHeartbeatBlinkMs;
     bool builtinLedActive;
 

@@ -14,7 +14,7 @@ func TestParseLine_ValidJSON(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	c := NewSerialCollector(cfg, logger)
 
-	line := `{"temp":32.8,"humidity":76.0,"smoke_raw":380,"smoke_voltage":0.306,"smoke_pct":9.3,"status":"NORMAL","uptime_ms":4526}`
+	line := `{"temp":32.8,"humidity":76.0,"smoke_raw":380,"smoke_voltage":0.306,"smoke_pct":9.3,"status":"NORMAL","light_raw":1850,"light_pct":45.2,"light_status":"INDOOR LIGHT","is_night":false,"uptime_ms":4526}`
 	telemetry, err := c.ParseLine(line)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
@@ -31,6 +31,18 @@ func TestParseLine_ValidJSON(t *testing.T) {
 	}
 	if telemetry.SmokeStatus != "NORMAL" {
 		t.Errorf("expected status NORMAL, got %s", telemetry.SmokeStatus)
+	}
+	if telemetry.LightRawADC != 1850 {
+		t.Errorf("expected light_raw 1850, got %d", telemetry.LightRawADC)
+	}
+	if telemetry.LightPercent != 45.2 {
+		t.Errorf("expected light_pct 45.2, got %f", telemetry.LightPercent)
+	}
+	if telemetry.LightStatus != "INDOOR LIGHT" {
+		t.Errorf("expected light_status 'INDOOR LIGHT', got %s", telemetry.LightStatus)
+	}
+	if telemetry.IsNightMode {
+		t.Errorf("expected is_night false, got true")
 	}
 	if telemetry.UptimeSec != 4 {
 		t.Errorf("expected uptime 4s, got %d", telemetry.UptimeSec)

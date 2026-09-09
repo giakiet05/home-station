@@ -19,13 +19,15 @@ SensorManager::SensorManager()
 bool SensorManager::init() {
     boot_timestamp_ms_ = millis();
 
-    // Initialize MQ-2 analog pin
+    // Initialize MQ-2 and LDR analog pins
     pinMode(Config::PIN_MQ2_AO, INPUT);
+    pinMode(Config::PIN_LDR_AO, INPUT);
 
     // Initialize DHT11
     dht_.begin();
     dht_initialized_ = true;
     Serial.printf("[INFO] DHT11 sensor initialized on GPIO%d.\n", Config::PIN_DHT_DATA);
+    Serial.printf("[INFO] LDR ambient light sensor active on GPIO%d.\n", Config::PIN_LDR_AO);
 
     return dht_initialized_;
 }
@@ -50,6 +52,29 @@ AirQualityStatus SensorManager::evaluateAirQuality(float voltage, bool &isWarmin
     }
 
     return AirQualityStatus::NORMAL;
+}
+
+/**
+ * @brief Evaluates ambient light level and night mode state from LDR ADC.
+ * @param adc Raw 12-bit ADC reading from LDR pin.
+ * @param isNightMode Reference output set to true when lighting is dark.
+ * @return AmbientLightStatus Current ambient light classification.
+ */
+AmbientLightStatus SensorManager::evaluateLightStatus(uint16_t adc, bool &isNightMode) {
+    if (adc < Config::LDR_NIGHT_THRESHOLD_ADC) {
+        isNightMode = true;
+        return AmbientLightStatus::DARK;
+    }
+
+    isNightMode = false;
+    if (adc >= Config::LDR_SUNNY_THRESHOLD_ADC) {
+        return AmbientLightStatus::DIRECT_SUNLIGHT;
+    } else if (adc >= 2600) {
+        return AmbientLightStatus::BRIGHT;
+    } else if (adc >= 1000) {
+        return AmbientLightStatus::INDOOR_LIGHT;
+    }
+    return AmbientLightStatus::DIM;
 }
 
 /**
@@ -95,6 +120,11 @@ SensorReadings SensorManager::read() {
     readings.mq2_percentage = (static_cast<float>(readings.mq2_raw_adc) / static_cast<float>(Config::ADC_MAX_RESOLUTION)) * 100.0f;
     readings.mq2_valid = true;
 
+    // 5. Read LDR (Ambient Light ADC)
+    readings.light_raw_adc = analogRead(Config::PIN_LDR_AO);
+    readings.light_percentage = (static_cast<float>(readings.light_raw_adc) / static_cast<float>(Config::ADC_MAX_RESOLUTION)) * 100.0f;
+    readings.light_status = evaluateLightStatus(readings.light_raw_adc, readings.is_night_mode);
+
     // Evaluate hazard status
     readings.air_status = evaluateAirQuality(readings.mq2_voltage, readings.is_warming_up);
 
@@ -122,6 +152,28 @@ const char* SensorManager::airQualityStatusToString(AirQualityStatus status) {
 }
 
 /**
+ * @brief Converts an AmbientLightStatus enum value into a readable string.
+ * @param status The status enum to convert.
+ * @return const char* String representation of the light status.
+ */
+const char* SensorManager::ambientLightStatusToString(AmbientLightStatus status) {
+    switch (status) {
+        case AmbientLightStatus::DARK:
+            return "DARK (Night Mode)";
+        case AmbientLightStatus::DIM:
+            return "DIM";
+        case AmbientLightStatus::INDOOR_LIGHT:
+            return "INDOOR LIGHT";
+        case AmbientLightStatus::BRIGHT:
+            return "BRIGHT";
+        case AmbientLightStatus::DIRECT_SUNLIGHT:
+            return "DIRECT SUNLIGHT";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+/**
  * @brief Logs the sensor readings as structured JSON string to Serial.
  * @param readings Constant reference to the collected sensor dataset.
  */
@@ -129,14 +181,20 @@ void SensorManager::printReadings(const SensorReadings &readings) {
     float temp = (readings.dht_valid || readings.aht20_valid) ? readings.temperature_c : 0.0f;
     float hum = (readings.dht_valid || readings.aht20_valid) ? readings.humidity_pct : 0.0f;
     const char *statusStr = airQualityStatusToString(readings.air_status);
+    const char *lightStatusStr = ambientLightStatusToString(readings.light_status);
+    const char *isNightStr = readings.is_night_mode ? "true" : "false";
 
     // Single-line structured JSON payload for downstream collectors
-    Serial.printf("{\"temp\":%.1f,\"humidity\":%.1f,\"smoke_raw\":%u,\"smoke_voltage\":%.3f,\"smoke_pct\":%.1f,\"status\":\"%s\",\"uptime_ms\":%lu}\n",
+    Serial.printf("{\"temp\":%.1f,\"humidity\":%.1f,\"smoke_raw\":%u,\"smoke_voltage\":%.3f,\"smoke_pct\":%.1f,\"status\":\"%s\",\"light_raw\":%u,\"light_pct\":%.1f,\"light_status\":\"%s\",\"is_night\":%s,\"uptime_ms\":%lu}\n",
                   temp,
                   hum,
                   readings.mq2_raw_adc,
                   readings.mq2_voltage,
                   readings.mq2_percentage,
                   statusStr,
+                  readings.light_raw_adc,
+                  readings.light_percentage,
+                  lightStatusStr,
+                  isNightStr,
                   millis());
 }

@@ -19,6 +19,18 @@ enum class AirQualityStatus {
 };
 
 /**
+ * @enum AmbientLightStatus
+ * @brief Categorized ambient light conditions from LDR sensor readings.
+ */
+enum class AmbientLightStatus {
+    DARK,               // Pitch dark / Night mode (<350 ADC)
+    DIM,                // Dim room / Twilight (350-1000 ADC)
+    INDOOR_LIGHT,       // Normal indoor lamp / Daylight (1000-2600 ADC)
+    BRIGHT,             // Bright room / Window daylight (2600-3200 ADC)
+    DIRECT_SUNLIGHT     // Direct sunlight hitting room (>3200 ADC)
+};
+
+/**
  * @struct SensorReadings
  * @brief Aggregated telemetry data from all connected environment sensors.
  */
@@ -32,6 +44,11 @@ struct SensorReadings {
     uint16_t mq2_raw_adc;       /**< Raw 12-bit ADC reading from MQ-2 */
     float mq2_voltage;          /**< Computed voltage at MQ-2 analog pin */
     float mq2_percentage;       /**< Estimated gas concentration percentage (0-100%) */
+
+    uint16_t light_raw_adc;     /**< Raw 12-bit ADC reading from LDR (GPIO1) */
+    float light_percentage;     /**< Computed light level percentage (0-100%) */
+    bool is_night_mode;         /**< True if ambient light is below night threshold */
+    AmbientLightStatus light_status; /**< Categorized ambient illumination status */
 
     bool dht_valid;             /**< Flag indicating successful DHT11 sample */
     bool aht20_valid;           /**< Flag indicating successful AHT20 sample */
@@ -78,6 +95,13 @@ public:
      */
     static const char* airQualityStatusToString(AirQualityStatus status);
 
+    /**
+     * @brief Converts an AmbientLightStatus enum value into a readable string.
+     * @param status The status enum to convert.
+     * @return const char* String representation of the light status.
+     */
+    static const char* ambientLightStatusToString(AmbientLightStatus status);
+
 private:
     DHT dht_;
     Adafruit_AHTX0 aht20_;
@@ -95,4 +119,12 @@ private:
      * @return AirQualityStatus Current air quality condition.
      */
     AirQualityStatus evaluateAirQuality(float voltage, bool &isWarmingUp);
+
+    /**
+     * @brief Evaluates ambient light level and night mode state from LDR ADC.
+     * @param adc Raw 12-bit ADC reading from LDR pin.
+     * @param isNightMode Reference output set to true when lighting is dark.
+     * @return AmbientLightStatus Current ambient light classification.
+     */
+    AmbientLightStatus evaluateLightStatus(uint16_t adc, bool &isNightMode);
 };
