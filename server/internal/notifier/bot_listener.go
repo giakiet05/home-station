@@ -112,12 +112,18 @@ func (b *BotListener) handleCommand(ctx context.Context, chatID int64, text stri
 			stateStr = "OFFLINE"
 		}
 
+		lightStr := "N/A"
+		if t.LightStatus != "" {
+			lightStr = fmt.Sprintf("%s (%d ADC)", t.LightStatus, t.LightRawADC)
+		}
+
 		msg := fmt.Sprintf("🏠 <b>Home Station Live Telemetry</b>\n\n"+
 			"<b>Status:</b> <code>%s</code>\n"+
 			"<b>Device:</b> <code>%s</code>\n"+
 			"<b>Temperature:</b> <code>%.1f°C</code>\n"+
 			"<b>Humidity:</b> <code>%.1f%%</code>\n"+
 			"<b>Smoke / Gas:</b> <code>%s (%d ADC)</code>\n"+
+			"<b>Ambient Light:</b> <code>%s</code>\n"+
 			"<b>Voltage:</b> <code>%.3fV</code>\n"+
 			"<b>Uptime:</b> <code>%d seconds</code>\n"+
 			"<b>Last seen:</b> <code>%s</code>",
@@ -127,6 +133,7 @@ func (b *BotListener) handleCommand(ctx context.Context, chatID int64, text stri
 			t.Humidity,
 			t.SmokeStatus,
 			t.SmokeRawADC,
+			lightStr,
 			t.SmokeVoltage,
 			t.UptimeSec,
 			t.LastSeen.Format("2006-01-02 15:04:05 UTC"))

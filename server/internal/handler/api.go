@@ -78,6 +78,7 @@ func (r *Router) handleGetHomepageWidgetData(w http.ResponseWriter, req *http.Re
 	}
 
 	smokeStr := fmt.Sprintf("%s (%d)", t.SmokeStatus, t.SmokeRawADC)
+	lightStr := classifyLightLevel(t.LightRawADC, t.LightStatus)
 	deviceState := "Online"
 	if !t.DeviceOnline {
 		deviceState = "Offline"
@@ -92,6 +93,7 @@ func (r *Router) handleGetHomepageWidgetData(w http.ResponseWriter, req *http.Re
 		Temperature: tempStr,
 		Humidity:    humStr,
 		SmokeLevel:  smokeStr,
+		LightLevel:  lightStr,
 		Status:      t.SmokeStatus,
 		DeviceState: deviceState,
 		LastUpdated: lastUpdated,
@@ -100,6 +102,19 @@ func (r *Router) handleGetHomepageWidgetData(w http.ResponseWriter, req *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// classifyLightLevel converts raw LDR ADC into human-readable illumination category.
+func classifyLightLevel(adc uint16, status string) string {
+	if adc == 0 && status == "" {
+		return "N/A"
+	}
+	if adc >= 3000 {
+		return fmt.Sprintf("Mạnh / Sáng (%d)", adc)
+	} else if adc >= 1000 {
+		return fmt.Sprintf("Vừa phải (%d)", adc)
+	}
+	return fmt.Sprintf("Yếu / Tối (%d)", adc)
 }
 
 // handleDashboardPage renders a clean, self-contained Dark Mode status card.
@@ -128,7 +143,7 @@ func (r *Router) handleDashboardPage(w http.ResponseWriter, req *http.Request) {
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
         .metric { background: #0f172a; padding: 16px; border-radius: 12px; border: 1px solid #334155; }
         .label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .value { font-size: 1.6rem; font-weight: 700; color: #f8fafc; }
+        .value { font-size: 1.4rem; font-weight: 700; color: #f8fafc; }
         .full-width { grid-column: span 2; }
         .footer { font-size: 0.75rem; color: #64748b; text-align: center; margin-top: 16px; }
     </style>
@@ -149,8 +164,12 @@ func (r *Router) handleDashboardPage(w http.ResponseWriter, req *http.Request) {
                 <div class="value">%.1f %%</div>
             </div>
             <div class="metric full-width">
+                <div class="label">Ambient Light</div>
+                <div class="value" style="font-size: 1.2rem;">%s</div>
+            </div>
+            <div class="metric full-width">
                 <div class="label">Smoke & Gas Detection</div>
-                <div class="value" style="font-size: 1.25rem;">%s <span style="font-size: 0.9rem; color: #94a3b8;">(ADC: %d)</span></div>
+                <div class="value" style="font-size: 1.2rem;">%s <span style="font-size: 0.85rem; color: #94a3b8;">(ADC: %d)</span></div>
             </div>
         </div>
         <div class="footer">
@@ -163,6 +182,7 @@ func (r *Router) handleDashboardPage(w http.ResponseWriter, req *http.Request) {
 		getDeviceStatusString(t.DeviceOnline),
 		t.Temperature,
 		t.Humidity,
+		classifyLightLevel(t.LightRawADC, t.LightStatus),
 		t.SmokeStatus,
 		t.SmokeRawADC,
 		t.LastSeen.Format("15:04:05 UTC"),

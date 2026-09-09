@@ -39,6 +39,7 @@ type HomepageWidgetResponse struct {
 	Temperature string `json:"temperature"`
 	Humidity    string `json:"humidity"`
 	SmokeLevel  string `json:"smoke_level"`
+	LightLevel  string `json:"light_level"`
 	Status      string `json:"status"`
 	DeviceState string `json:"device_state"`
 	LastUpdated string `json:"last_updated"`
